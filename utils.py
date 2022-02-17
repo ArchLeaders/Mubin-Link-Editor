@@ -9,7 +9,7 @@ from bpy.props import IntProperty, CollectionProperty
 from pathlib import Path
 from oead import byml, yaz0
 
-from .ui.props import ParamProperties
+from .ui.properties import ParamProperties
 
 # - - - - - - - - - -
 # MLE BASE CLASSES
