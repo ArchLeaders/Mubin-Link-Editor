@@ -59,8 +59,11 @@ class RegisterHelper:
         for category in categories:
             collect = []
             for item in categories[category]:
-                collect.append(NodeItem(categories[category][item].replace('-static', ''), label=item, settings={
-                    'definition': repr(item)
+                scale = (1, 1, 1)
+                cls = categories[category][item].replace('-static', '')
+                collect.append(NodeItem(cls, label=item, settings={
+                    'definition': repr(item),
+                    'scale': repr(scale)
                 }))
             
             nodes.append(MLECategory(category.upper(), category, items=collect))
