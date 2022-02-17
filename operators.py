@@ -23,16 +23,24 @@ class MLE_EXPORTER_OT_ExportTemplate(Operator, ExportHelper):
     filter_glob: StringProperty( default='*.json', options={'HIDDEN'} )
 
     def execute(self, context: Context):
+        # fix output file
         if not Path(str(self.filepath)).suffix.lower() == '.json':
             self.filepath = f'{self.filepath}.json'
 
-        # Get node stuff and export
-        node_tree: NodeTree = context.space_data.edit_tree
-        for node in node_tree.nodes:
-            if node.name == 'Export':
-                for node_out in node.outputs:
-                    for node_link in node_out.links:
-                        print(node_link.to_node.actor_name)
+        node = None
+        hash_id = 0
+        translate = [ 0, 0, 0 ]
+    
+        # Get node
+        for sub_node in context.space_data.edit_tree.nodes:
+            if sub_node.startswith('Export'):
+                node = sub_node
+                break
+
+        for node_out in node.outputs:
+            for node_link in node_out.links:
+                # iterate the connections
+                ...
 
 
         return {'FINISHED'}
@@ -236,8 +244,35 @@ class MLE_PARAMS_OT_Import(Operator):
                 # parse Ice-Spear json data
                 if 'UnitConfigName' in json_data:
                     set = False
-                    # set actor values
+                    actors = RegisterHelper.data('actors')
+
+                    # import scale
+                    if 'Scale' in json_data and node.bl_idname == 'actor':
+                        if 'value' in json_data['Scale']:
+                            node.scale = (
+                                json_data['Scale']['value'],
+                                json_data['Scale']['value'],
+                                json_data['Scale']['value']
+                            )
+                        else:
+                            node.scale = (
+                                json_data['Scale'][0]['value'],
+                                json_data['Scale'][1]['value'],
+                                json_data['Scale'][2]['value']
+                            )
+
+                    # import model?
+                    if json_data['UnitConfigName']['value'] in actors and node.bl_idname == 'actor':
+                        actor = actors[json_data['UnitConfigName']['value']]
+                        exp = RegisterHelper.data('config')['exported']
+                        bpy.ops.wm.collada_import(filepath=f'{exp}\\{actor["BfresName"]}\\{actor["ModelName"]}.dae')
+                    else:
+                        bpy.ops.mesh.primitive_cube_add(scale=node.scale)
+                        bpy.context.selected_objects[0].name = json_data['UnitConfigName']['value']
+
+                    # import params
                     if node.bl_idname == 'actor':
+
                         # set parameters
                         set = True
                         if '!Parameters' in json_data:
@@ -255,13 +290,12 @@ class MLE_PARAMS_OT_Import(Operator):
 
                         # set name and defenition
                         node.definition = str(json_data['UnitConfigName']['value'])
-                        node.label = str(json_data['UnitConfigName']['value'])
 
                     elif node.bl_idname == 'link':
                         if 'LinksToObj' in json_data:
                             for link in json_data['LinksToObj']:
                                 # look for link defenition
-                                if link['DefinitionName']['value'] != node.defenition:
+                                if link['DefinitionName']['value'] != node.definition:
                                     continue
 
                                 # set link parameters
@@ -270,10 +304,10 @@ class MLE_PARAMS_OT_Import(Operator):
                                         set = True
                                         param = node.params.add()
                                         param.name = str(sub_key)
-                                        param.value = str(json_data['LinksToObj'][link]['!Parameters'][sub_key]['value'])
+                                        param.value = str(link['!Parameters'][sub_key]['value'])
                     
                     # return results
-                    if not set: self.report({'WARNING'}, f'No link for \'{node.defenition}\' could be found!')
+                    if not set: self.report({'WARNING'}, f'No link for \'{node.definition}\' could be found!')
                     return {'FINISHED'}
 
                 # parse Ice-Spear parameters
