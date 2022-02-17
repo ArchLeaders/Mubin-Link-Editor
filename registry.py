@@ -34,7 +34,7 @@ from .ui.panels import (
     MLE_SETTINGS_PT_Nodes,
     MLE_SETTINGS_PT_Ignored,
 )
-from .ui.props import (
+from .ui.properties import (
     ParamProperties,
     MLE_UL_Params
 )
