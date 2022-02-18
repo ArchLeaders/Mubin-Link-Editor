@@ -1,3 +1,4 @@
+from cgitb import text
 import bpy
 from bpy.types import Node
 from .properties import ParamProperties
@@ -12,37 +13,18 @@ class Actor(Node, REF_MubinLinkEditor_NodeTree):
     bl_width_min = 160.0
 
     definition: bpy.props.StringProperty(name='', default='LinkTagAnd')
+
     hash_id: bpy.props.StringProperty(
         name='',
-        description='The dummy actor\'s HashID as a decimal.\nThis value will not be used in the exported JSON')
+        description='The dummy actor\'s HashID as a decimal.\nThis value will not be used in the exported JSON'
+    )
 
-    scale: bpy.props.FloatVectorProperty(
-        name='',
-        default=(1, 1, 1),
-        max=1000,
-        min=0,
-        description='XYZ (Y is UP) | Leave as 0, 0, 0 for automatic placement'
-    )
-    rotation: bpy.props.FloatVectorProperty(
-        name='',
-        default=(0, 0, 0),
-        max=360,
-        min=0,
-        description='XYZ (Y is UP) | Leave as 0, 0, 0 for automatic placement'
-    )
-    translate: bpy.props.FloatVectorProperty(
-        name='',
-        default=(0, 0, 0),
-        max=5000,
-        min=-5000,
-        description='XYZ (Y is UP) | Leave as 0, 0, 0 for automatic placement'
-    )
+    scale: bpy.props.FloatVectorProperty(name='scale', default=(1, 1, 1))
 
     ref_object: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name='Reference Object',
-        description='Link an object to use it\'s transform values.\n' +
-            'Note: It you apply the objects transform, all values will be set to (0, 0, 0)'
+        description='Link an object to use it\'s transform values in the exported template'
     )
 
     params: bpy.props.CollectionProperty(type=ParamProperties)
@@ -64,8 +46,11 @@ class Actor(Node, REF_MubinLinkEditor_NodeTree):
     def draw_buttons(self, context, layout):
         layout.label(text='Actor Name')
         layout.prop(self, 'definition')
-        layout.label(text='Hash Identifier')
-        layout.prop(self, 'hash_id')
+        row = layout.row(align=True)
+        row.operator('params.load')
+        row.operator('params.import')
+        layout.label(text='Transform Object')
+        layout.prop(self, 'ref_object', icon='OBJECT_ORIGIN', text='')
 
     # Properties only in the properties panel
     def draw_buttons_ext(self, context, layout):
@@ -104,24 +89,8 @@ class Actor(Node, REF_MubinLinkEditor_NodeTree):
 
 
         # Transform
-        layout.label(text='Transforms')
-
-        row = layout.row()
-
-        col = row.column()
-        col.label(text='Scale', icon='OBJECT_ORIGIN')
-        col.prop(self, 'scale')
-
-        col = row.column()
-        col.label(text='Rotation', icon='EMPTY_AXIS')
-        col.prop(self, 'rotation')
-
-        col = row.column()
-        col.label(text='Translate', icon='EMPTY_ARROWS')
-        col.prop(self, 'translate')
-
-        layout.prop(self, 'ref_object', icon='OBJECT_DATA', text='')
-
+        layout.label(text='Transform Object')
+        layout.prop(self, 'ref_object', icon='OBJECT_ORIGIN', text='')
         layout.separator()
 
         # Hash ID
@@ -220,11 +189,15 @@ class Template(Node):
     # Properties on the node and in the properties panel
     def draw_buttons(self, context, layout):
         layout.prop(self, 'overwrite')
-        layout.operator('json.save_template')
-        layout.operator('json.export')
+        layout.operator('template.save')
+        layout.operator('template.export')
+        layout.separator()
+        layout.operator('template.isolate', text='Isolate 3D')
 
     # Properties only in the properties panel
     def draw_buttons_ext(self, context, layout):
         layout.prop(self, 'overwrite')
-        layout.operator('json.save_template')
-        layout.operator('json.export')
+        layout.operator('template.save')
+        layout.operator('template.export')
+        layout.separator()
+        layout.operator('template.isolate', text='Isolate 3D')
