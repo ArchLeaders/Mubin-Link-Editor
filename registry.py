@@ -7,8 +7,9 @@ from .ui.node_tree import (
     MubinLinkEditor_NodeTree,
 )
 from .operators import (
-    MLE_EXPORTER_OT_ExportTemplate,
-    MLE_EXPORTER_OT_SaveTemplate,
+    MLE_TEMPLATE_OT_Export,
+    MLE_TEMPLATE_OT_Save,
+    MLE_TEMPLATE_OT_Isolate,
 
     MLE_PARAMS_OT_Add,
     MLE_PARAMS_OT_Remove,
@@ -45,8 +46,9 @@ classes = (
 
     # Operators
         # OT_EXPORTER
-        MLE_EXPORTER_OT_ExportTemplate,
-        MLE_EXPORTER_OT_SaveTemplate,
+        MLE_TEMPLATE_OT_Export,
+        MLE_TEMPLATE_OT_Save,
+        MLE_TEMPLATE_OT_Isolate,
 
         # OT_PARAMS
         MLE_PARAMS_OT_Add,
