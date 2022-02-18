@@ -339,18 +339,27 @@ class Constructor:
 
                     Constructor.constructor(link)
 
+            rotate = [0, 0, 0]
+            scale = [1, 1, 1]
+            translate = [0, 0, 0]
+
+            if node.ref_object:
+                rotate = node.ref_object.rotation_euler
+                scale = node.ref_object.scale
+                translate = node.ref_object.location
+
             json_data['actors'].append({
                 '!Parameters': Constructor.build_params(node.params),
                 'HashId': {
                     'type': 211, 'value': f'{{ID{self}}}'
                 },
                 'LinksToObj': links,
-                'Rotate': Constructor.format_vector(node.ref_object.rotation_euler),
-                'Scale': Constructor.format_vector(node.ref_object.scale),
+                'Rotate': Constructor.format_vector(rotate),
+                'Scale': Constructor.format_vector(scale),
                 "SRTHash": {
                     "type": 209, "value": 0 
                 },
-                'Translate': Constructor.format_vector(node.ref_object.location, False),
+                'Translate': Constructor.format_vector(translate, False),
                 'UnitConfigName': {
                     'type': 160, 'value': node.definition
                 }
