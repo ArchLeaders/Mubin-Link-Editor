@@ -150,7 +150,7 @@ class NodeHelper:
         return obj
 
     def import_void(name, scale = (1, 1, 1)):
-        bpy.ops.mesh.primitive_cube_add(scale=scale)
+        bpy.ops.mesh.primitive_cube_add(scale=scale, size=1)
         mesh = bpy.context.selected_objects[0]
         mesh.name = name
 
@@ -250,18 +250,30 @@ class Constructor:
 
     hash_id = 0
     """Global HashID used to define the next HashId value"""
+
+    json_data = {}
+    """Global json data returned to the caller"""
+
+    def omit_null(dictionary):
+        return {k: v for k, v in dictionary.items() if v is not None}
     
-    def construct_template(base: bpy.types.NodeLink, tree: bpy.types.NodeTree):
+    def build_template(base: bpy.types.NodeLink, tree: bpy.types.NodeTree):
         """Construct a template from a root node"""
 
-        json_data = {
+        Constructor.json_data = {
             'name': tree.name,
             'actors': []
         }
 
         # construct base
-        Constructor.constructor(base, json_data)
+        Constructor.constructor(base)
+        json_data = Constructor.json_data
+
+        # reset values
         Constructor.hash_id = 0
+        Constructor.json_data = {}
+
+        # return value
         return json_data
 
     def parse(value):
@@ -312,7 +324,7 @@ class Constructor:
 
         return json_data
 
-    def constructor(base: bpy.types.NodeLink, json_data: dict):
+    def constructor(base: bpy.types.NodeLink):
         """Adds every sub actor to the output json"""
         for node in base.outputs[0].links:
             links = None
@@ -339,16 +351,15 @@ class Constructor:
 
                     Constructor.constructor(link)
 
+            scale = node.scale
             rotate = [0, 0, 0]
-            scale = [1, 1, 1]
             translate = [0, 0, 0]
 
             if node.ref_object:
                 rotate = node.ref_object.rotation_euler
-                scale = node.ref_object.scale
                 translate = node.ref_object.location
 
-            json_data['actors'].append({
+            Constructor.json_data['actors'].append(Constructor.omit_null({
                 '!Parameters': Constructor.build_params(node.params),
                 'HashId': {
                     'type': 211, 'value': f'{{ID{self}}}'
@@ -363,4 +374,4 @@ class Constructor:
                 'UnitConfigName': {
                     'type': 160, 'value': node.definition
                 }
-            })
+            }))
