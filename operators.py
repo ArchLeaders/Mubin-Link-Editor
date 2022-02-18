@@ -1,6 +1,7 @@
-import traceback
 import bpy
 import json
+import random
+import traceback
 
 from bpy.props import StringProperty
 from bpy_extras.io_utils import ExportHelper
@@ -14,9 +15,9 @@ from .utils import Clipboard, NodeHelper, RegisterHelper
 # MLE_EXPORTER
 # - - - - - - - - - -
 
-class MLE_EXPORTER_OT_ExportTemplate(Operator, ExportHelper):
+class MLE_TEMPLATE_OT_Export(Operator, ExportHelper):
     """Export the connected node tree as Json to be ued in Ice-Spear"""
-    bl_idname = 'json.export'
+    bl_idname = 'template.export'
     bl_label = 'Export Json'
 
     filename_ext = '.json'
@@ -26,29 +27,39 @@ class MLE_EXPORTER_OT_ExportTemplate(Operator, ExportHelper):
         # fix output file
         if not Path(str(self.filepath)).suffix.lower() == '.json':
             self.filepath = f'{self.filepath}.json'
-
-        node = None
-        hash_id = 0
-        translate = [ 0, 0, 0 ]
     
         # Get node
         for sub_node in context.space_data.edit_tree.nodes:
-            if sub_node.startswith('Export'):
+            if sub_node.bl_idname == 'template':
                 node = sub_node
                 break
 
-        for node_out in node.outputs:
-            for node_link in node_out.links:
-                # iterate the connections
-                ...
+        json_data = NodeHelper.construct_template(node, context.space_data.edit_tree)
+        Path(self.filepath).write_text(json.dumps(json_data, indent=4))
+
+        return {'FINISHED'}
+
+class MLE_TEMPLATE_OT_Save(Operator):
+    """Saves the node setup as a template in the Ice-Spear data directory"""
+    bl_idname = 'template.save'
+    bl_label = 'Save Template'
+
+    def execute(self, context: Context):
+        # Get node stuff and export
+        node_tree: NodeTree = context.space_data.edit_tree
+        for node in node_tree.nodes:
+            if node.name == 'Export':
+                for node_out in node.outputs:
+                    for node_link in node_out.links:
+                        print(node_link.to_node.actor_name)
 
 
         return {'FINISHED'}
 
-class MLE_EXPORTER_OT_SaveTemplate(Operator):
-    """Saves the node setup as a template in the Ice-Spear data directory."""
-    bl_idname = 'json.save_template'
-    bl_label = 'Save Template'
+class MLE_TEMPLATE_OT_Isolate(Operator):
+    """Isolates every linked object in the currect tree to the local view"""
+    bl_idname = 'template.isolate'
+    bl_label = 'Isolate 3D'
 
     def execute(self, context: Context):
         # Get node stuff and export
@@ -165,8 +176,10 @@ class MLE_PARAMS_OT_Load(Operator):
             self.report({'ERROR'}, f'Select a node to edit')
             return {'CANCELLED'}
 
+        # clear existing params
         node.params.clear()
 
+        # get params
         load_results = {}
         errno = f'Parameters for {node.definition} could not be found.'
         if node.bl_idname == 'actor':
@@ -179,10 +192,23 @@ class MLE_PARAMS_OT_Load(Operator):
             self.report({'ERROR'}, errno)
             return {'CANCELLED'}
 
-        for key in load_results:
+        # import params
+        for key in load_results['params']:
             param = node.params.add()
             param.name = str(key)
-            param.value = str(load_results[key])
+            param.value = str(load_results['params'][key])
+
+        # import model
+        if node.bl_idname == 'actor':
+            actors = RegisterHelper.data('actors')
+            if node.definition in actors:
+                obj = NodeHelper.import_actor_merged(actors[node.definition], load_results['scale'])
+            else:
+                obj = NodeHelper.import_void(node.definition, load_results['scale'])
+
+            node.ref_object = obj
+            node.scale = load_results['scale']
+            name = RegisterHelper.get_random(); node.name = name; obj.name = name
 
         return {'FINISHED'}
 
@@ -261,14 +287,14 @@ class MLE_PARAMS_OT_Import(Operator):
                                 json_data['Scale'][2]['value']
                             )
 
-                    # import model?
+                    # import model
                     if json_data['UnitConfigName']['value'] in actors and node.bl_idname == 'actor':
-                        actor = actors[json_data['UnitConfigName']['value']]
-                        exp = RegisterHelper.data('config')['exported']
-                        bpy.ops.wm.collada_import(filepath=f'{exp}\\{actor["BfresName"]}\\{actor["ModelName"]}.dae')
+                        obj = NodeHelper.import_actor_merged(actors[json_data['UnitConfigName']['value']], node.scale)
                     else:
-                        bpy.ops.mesh.primitive_cube_add(scale=node.scale)
-                        bpy.context.selected_objects[0].name = json_data['UnitConfigName']['value']
+                        obj = NodeHelper.import_void(json_data['UnitConfigName']['value'], node.scale)
+
+                    node.ref_object = obj
+                    name = RegisterHelper.get_random(); node.name = name; obj.name = name
 
                     # import params
                     if node.bl_idname == 'actor':
