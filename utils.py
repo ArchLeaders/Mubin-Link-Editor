@@ -106,8 +106,6 @@ class RegisterHelper:
 class NodeHelper:
     """Various helpers for node parameters"""
 
-    hash_id = 0
-
     def import_actor_merged(actor, scale = (1, 1, 1)):
         """Import an actor and merge it into one object"""
         exp = RegisterHelper.data('config')['exported']
@@ -243,135 +241,117 @@ class NodeHelper:
                                 return json_data
         return None
 
+# - - - - - - - - - -
+# CONSTRUCTORS
+# - - - - - - - - - -
+
+class Constructor:
+    """Methods for exporting link setups"""
+
+    hash_id = 0
+    """Global HashID used to define the next HashId value"""
+    
     def construct_template(base: bpy.types.NodeLink, tree: bpy.types.NodeTree):
+        """Construct a template from a root node"""
 
         json_data = {
             'name': tree.name,
             'actors': []
         }
 
-        def parse(value):
-            """Parses a value and returns IS type and formatted value"""
-            fmt = value.lower()
-
-            # boolean
-            if fmt == 'true' or fmt == 'false':
-                return {
-                    'type': 208,
-                    'value': bool(fmt == 'true')
-                }
-            
-            try:
-                # float
-                if value.contains('.'):
-                    # trigger except if it's not a valid float
-                    float(value)
-                    return {
-                        'type': 210,
-                        'value': float(value)
-                    }
-
-                # int
-                else:
-                    # trigger except if it's not a valid float
-                    int(value)
-                    return {
-                        'type': 209,
-                        'value': int(value)
-                    }
-            except:
-                # str
-                return {
-                    'type': 160,
-                    'value': value
-                }
-
-        def format_vector(vector: typing.List[float], compare: bool = True) -> dict:
-            """Returns a IS formatted vector"""
-            json_data = []
-            static_first = vector[0]
-            first = vector[0]
-
-            for value in vector:
-                if value == first:
-                    first = value
-                else:
-                    first = 0
-
-                json_data.append(
-                    {
-                        'type': 210,
-                        'value': value
-                    }
-                )
-
-            if first == static_first and compare:
-                json_data = {
-                    'type': 210,
-                    'value': first
-                }
-
-            return json_data
-
-        def build_params(params: bpy.types.Node):
-            """Returns a IS formatted parameter list"""
-            json_data = {}
-
-            for param in params:
-                json_data[param.name] = parse(param.value)
-
-            return json_data
-        
-        def constructor(base: bpy.types.NodeLink):
-            """Adds every sub actor to the output json"""
-            for node in base.outputs[0].links:
-                links = None
-                node = node.to_node
-                self = NodeHelper.hash_id
-
-                # iterate the links to objects
-                for link in node.outputs[0].links:
-                    links = []
-                    link = link.to_node
-                    for dummy in link.outputs[0].links:
-                        # update hash id
-                        NodeHelper.hash_id = NodeHelper.hash_id + 1
-                        links.append({
-                            '!Parameters': build_params(link.params),
-                            'DefinitionName': {
-                                'type': 160,
-                                'value': link.definition
-                            },
-                            'DestUnitHashId': {
-                                'type': 211,
-                                'value': f'{{ID{NodeHelper.hash_id}}}'
-                            }
-                        })
-
-                        constructor(link)
-
-                json_data['actors'].append(
-                    {
-                        '!Parameters': build_params(node.params),
-                        'HashId': {
-                            'type': 211,
-                            'value': f'{{ID{self}}}'
-                        },
-                        'LinksToObj': links,
-                        'Rotate': format_vector(node.ref_object.rotation_euler),
-                        'Scale': format_vector(node.ref_object.scale),
-                        "SRTHash": {
-                            "type": 209,
-                            "value": 0
-                        },
-                        'Translate': format_vector(node.ref_object.location, False),
-                        'UnitConfigName': {
-                            'type': 160,
-                            'value': node.definition
-                        }
-                    }
-                )
-
         # construct base
-        constructor(base)
+        Constructor.constructor(base, json_data)
+        Constructor.hash_id = 0
         return json_data
+
+    def parse(value):
+        """Parses a peice of data and returns an Ice-Spear formatted value.\nSupports: bool, str, float, int"""
+
+        dtype = 160; dvalue = None
+        if value.lower() == 'true' or value.lower() == 'false':
+            dtype = 208; dvalue = bool(value.lower() == 'true')
+        
+        try:
+            if value.contains('.'):
+                dtype = 210; dvalue = float(value)
+            else:
+                dtype = 209; dvalue = int(value)
+        except:
+            dvalue = value
+
+        return {
+            'type': dtype,
+            'value': dvalue
+        }
+
+    def format_vector(vector: typing.List[float], compare: bool = True) -> dict:
+        """Parses a vector type and returns an Ice-Spear formatted value"""
+        
+        json_data = []; static_first = vector[0]; first = vector[0]
+        for value in vector:
+            # compare values
+            if value == first:
+                first = value
+            else:
+                first = 0
+
+            # append value
+            json_data.append({ 'type': 210, 'value': value })
+
+        if first == static_first and compare:
+            json_data = { 'type': 210, 'value': first }
+
+        return json_data
+
+    def build_params(params: bpy.types.Node):
+        """Returns a IS formatted parameter list"""
+
+        json_data = {}
+        for param in params:
+            json_data[param.name] = Constructor.parse(param.value)
+
+        return json_data
+
+    def constructor(base: bpy.types.NodeLink, json_data: dict):
+        """Adds every sub actor to the output json"""
+        for node in base.outputs[0].links:
+            links = None
+            node = node.to_node
+            self = Constructor.hash_id
+
+            # iterate the links to objects
+            for link in node.outputs[0].links:
+
+                links = []; link = link.to_node
+                for dummy in link.outputs[0].links:
+                    Constructor.hash_id = Constructor.hash_id + 1
+                    links.append({
+                        '!Parameters': Constructor.build_params(link.params),
+                        'DefinitionName': {
+                            'type': 160,
+                            'value': link.definition
+                        },
+                        'DestUnitHashId': {
+                            'type': 211,
+                            'value': f'{{ID{Constructor.hash_id}}}'
+                        }
+                    })
+
+                    Constructor.constructor(link)
+
+            json_data['actors'].append({
+                '!Parameters': Constructor.build_params(node.params),
+                'HashId': {
+                    'type': 211, 'value': f'{{ID{self}}}'
+                },
+                'LinksToObj': links,
+                'Rotate': Constructor.format_vector(node.ref_object.rotation_euler),
+                'Scale': Constructor.format_vector(node.ref_object.scale),
+                "SRTHash": {
+                    "type": 209, "value": 0 
+                },
+                'Translate': Constructor.format_vector(node.ref_object.location, False),
+                'UnitConfigName': {
+                    'type': 160, 'value': node.definition
+                }
+            })
