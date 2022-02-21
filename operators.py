@@ -38,6 +38,9 @@ class MLE_TEMPLATE_OT_Export(Operator, ExportHelper):
         json_data = Constructor.build_template(node, context.space_data.edit_tree)
         Path(self.filepath).write_text(json.dumps(json_data, indent=4))
 
+        Constructor.handled = {}
+        Constructor.hash_id = 0
+
         self.report({'INFO'}, f'Exported {self.filepath}')
         return {'FINISHED'}
 
@@ -52,37 +55,56 @@ class MLE_TEMPLATE_OT_Save(Operator):
             if sub_node.bl_idname == 'template':
                 node = sub_node
                 break
+        
+        path = Path(f'{os.environ["USERPROFILE"]}\\.ice-spear\\templates')
+        file = Path(path, f'{context.space_data.edit_tree.name}.json')
+
+        if node.overwrite == False:
+            if file.is_file():
+                self.report({'WARNING'}, f'An template with the same name already exists')
+                return {'CANCELLED'}
 
         json_data = Constructor.build_template(node, context.space_data.edit_tree)
 
         # create output directory
-        path = Path(f'{os.environ["USERPROFILE"]}\\.ice-spear\\templates')
         if not path.is_dir():
             path.mkdir()
 
         # write output file
-        Path(path, f'{context.space_data.edit_tree.name}.json').write_text(json.dumps(json_data, indent=4))
+        file.write_text(json.dumps(json_data, indent=4))
+
+        Constructor.handled = {}
+        Constructor.hash_id = 0
 
         self.report({'INFO'}, f'Saved {context.space_data.edit_tree.name} to {path}')
         return {'FINISHED'}
 
 class MLE_TEMPLATE_OT_Isolate(Operator):
-    """Isolates every linked object in the currect tree to the local view"""
+    """Disperses every linked object in the currect tree"""
     bl_idname = 'template.isolate'
-    bl_label = 'Isolate 3D'
+    bl_label = 'Disperse 3D'
 
-    def set_links():
-        ...
+    i = 0
+
+    def iterate(self, node):
+        for n_out in node.outputs:
+            for n_link in n_out.links:
+                try:
+                    obj = n_link.to_node.ref_object
+                    obj.location = (obj.scale[0] * 1.5, 0, 0)
+                    n_link.to_node.ref_object.select_set(True)
+                    self.i = self.i + 1
+                except:
+                    print(traceback.format_exc())
+
+                self.iterate(n_link.to_node)
 
     def execute(self, context: Context):
         # Get node stuff and export
         node_tree: NodeTree = context.space_data.edit_tree
         for node in node_tree.nodes:
-            if node.name == 'Export':
-                for node_out in node.outputs:
-                    for node_link in node_out.links:
-                        print(node_link.to_node.actor_name)
-
+            if node.bl_idname == 'template':
+                self.iterate(node)
 
         return {'FINISHED'}
 
@@ -257,7 +279,7 @@ class MLE_PARAMS_OT_Import(Operator):
     bl_idname = 'params.import'
     bl_label = 'Import'
 
-    def execute(self, context):
+    def execute(self, context: Context):
         # get selected node
         node = []
         try:
