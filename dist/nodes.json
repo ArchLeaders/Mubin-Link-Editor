@@ -1,0 +1,55 @@
+{
+    "Actor": {
+        "New": "actor-static",
+        "TBox_Field_Stone": "actor"
+    },
+    "Tag": {
+        "LinkTagAnd": "actor-static",
+        "LinkTagCount": "actor-static",
+        "LinkTagNAnd": "actor-static",
+        "LinkTagNOr": "actor-static",
+        "LinkTagNone": "actor-static",
+        "LinkTagOr": "actor-static",
+        "LinkTagPulse": "actor-static",
+        "LinkTagXOr": "actor-static"
+    },
+    "Link": {
+        "AreaCol": "link-static",
+        "AxisY": "link-static",
+        "BAndSCs": "link-static",
+        "BAndSLimitAngYCs": "link-static",
+        "BasicSig": "link-static",
+        "BasicSigOnOnly": "link-static",
+        "ChangeAtnSig": "link-static",
+        "CogWheelCs": "link-static",
+        "CopyWaitRevival": "link-static",
+        "Create": "link-static",
+        "DeadUp": "link-static",
+        "Delete": "link-static",
+        "DemoMember": "link-static",
+        "FixedCs": "link-static",
+        "ForSale": "link-static",
+        "ForbidAttention": "link-static",
+        "Freeze": "link-static",
+        "GimmickSuccess": "link-static",
+        "HingeCs": "link-static",
+        "LifeZero": "link-static",
+        "LimitHingeCs": "link-static",
+        "ModelBind": "link-static",
+        "MtxCopyCreate": "link-static",
+        "OffWaitRevival": "link-static",
+        "PhysSystemGroup": "link-static",
+        "PlacementLOD": "link-static",
+        "PulleyCs": "link-static",
+        "Reference": "link-static",
+        "Remains": "link-static",
+        "SensorBind": "link-static",
+        "SliderCs": "link-static",
+        "Stable": "link-static",
+        "StackLink": "link-static",
+        "SyncLink": "link-static"
+    },
+    "Template": {
+        "Exporter": "template-static"
+    }
+}
