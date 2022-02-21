@@ -109,7 +109,13 @@ class NodeHelper:
 
     def import_actor_merged(actor, scale = (1, 1, 1)):
         """Import an actor and merge it into one object"""
-        exp = RegisterHelper.data('config')['exported']
+        
+        try:
+            exp = RegisterHelper.data('config')['exported']
+        except:
+            NodeHelper.import_void(scale=scale)
+            return
+
         bpy.ops.wm.collada_import(filepath=f'{exp}\\{actor["BfresName"]}\\{actor["ModelName"]}.dae')
 
         # clean up model
