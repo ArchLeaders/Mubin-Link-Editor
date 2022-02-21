@@ -11,6 +11,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+# intall required packages
+from .setup import init
+init()
+
 import bpy
 
 from bpy.utils import register_class as reg_cls, unregister_class as unreg_cls
