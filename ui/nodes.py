@@ -1,4 +1,3 @@
-from cgitb import text
 import bpy
 from bpy.types import Node
 from .properties import ParamProperties
@@ -13,12 +12,6 @@ class Actor(Node, REF_MubinLinkEditor_NodeTree):
     bl_width_min = 160.0
 
     definition: bpy.props.StringProperty(name='', default='LinkTagAnd')
-
-    hash_id: bpy.props.StringProperty(
-        name='',
-        description='The dummy actor\'s HashID as a decimal.\nThis value will not be used in the exported JSON'
-    )
-
     scale: bpy.props.FloatVectorProperty(name='scale', default=(1, 1, 1))
 
     ref_object: bpy.props.PointerProperty(
@@ -36,21 +29,29 @@ class Actor(Node, REF_MubinLinkEditor_NodeTree):
 
     # Copy function to initialize a copied node from an existing one.
     def copy(self, node):
+        bpy.ops.params.load()
         print(f'Copying from node {node} . . .')
 
     # Free function to clean up on removal.
     def free(self):
+        try:
+            bpy.data.objects.remove(self.ref_object)
+        except: None
         print(f'Removing node {self} . . .')
 
     # Properties on the node and in the properties panel
     def draw_buttons(self, context, layout):
         layout.label(text='Actor Name')
         layout.prop(self, 'definition')
-        row = layout.row(align=True)
-        row.operator('params.load')
-        row.operator('params.import')
+        # row = layout.row(align=True)
+        # row.operator('params.load')
+        # row.operator('params.import')
         layout.label(text='Transform Object')
-        layout.prop(self, 'ref_object', icon='OBJECT_ORIGIN', text='')
+        if self.ref_object != None:
+            layout.box().label(text=self.ref_object.name, icon='OBJECT_ORIGIN')
+        else:
+            layout.box().label(text='No Linked Object!', icon='OBJECT_ORIGIN')
+        # layout.prop(self, 'ref_object', icon='OBJECT_ORIGIN', text='')
 
     # Properties only in the properties panel
     def draw_buttons_ext(self, context, layout):
@@ -89,13 +90,9 @@ class Actor(Node, REF_MubinLinkEditor_NodeTree):
 
 
         # Transform
-        layout.label(text='Transform Object')
+        layout.label(text='Transform Object (DO NOT CHANGE)')
         layout.prop(self, 'ref_object', icon='OBJECT_ORIGIN', text='')
         layout.separator()
-
-        # Hash ID
-        layout.label(text='Hash Identifier')
-        layout.prop(self, 'hash_id', icon='COPY_ID')
 
 class Link(Node):
     """Simple node to link two actors with a signal"""
@@ -110,7 +107,7 @@ class Link(Node):
     params_index: bpy.props.IntProperty(name='Params Index', default=0)
 
     def init(self, context):
-        self.inputs.new('NodeSocketShader', 'Input')
+        self.inputs.new('NodeSocketShader', 'Input 1')
         self.outputs.new('NodeSocketString', 'Output')
 
     # Copy function to initialize a copied node from an existing one.
@@ -125,6 +122,14 @@ class Link(Node):
     def draw_buttons(self, context, layout):
         layout.label(text='Signal Type')
         layout.prop(self, 'definition')
+
+        last_input = self.inputs[len(self.inputs) - 1]
+        sec_last_input = self.inputs[len(self.inputs) - 2]
+        
+        if last_input.is_linked:
+            self.inputs.new('NodeSocketShader', f'Input {len(self.inputs) + 1}')
+        elif len(self.inputs) > 1 and not sec_last_input.is_linked:
+            self.inputs.remove(last_input)
 
     # Properties only in the properties panel
     def draw_buttons_ext(self, context, layout):
@@ -192,7 +197,7 @@ class Template(Node):
         layout.operator('template.save')
         layout.operator('template.export')
         layout.separator()
-        layout.operator('template.isolate', text='Isolate 3D')
+        layout.operator('template.isolate')
 
     # Properties only in the properties panel
     def draw_buttons_ext(self, context, layout):
@@ -200,4 +205,4 @@ class Template(Node):
         layout.operator('template.save')
         layout.operator('template.export')
         layout.separator()
-        layout.operator('template.isolate', text='Isolate 3D')
+        layout.operator('template.isolate')
