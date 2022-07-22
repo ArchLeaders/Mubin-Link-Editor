@@ -13,6 +13,7 @@
 
 # intall required packages
 from .setup import init
+
 init()
 
 import bpy
@@ -25,15 +26,16 @@ from .registry import classes
 from .utils import RegisterHelper
 
 bl_info = {
-    "name" : "Mubin Link Node Editor",
-    "author" : "Marcus Smith",
-    "description" : "",
-    "blender" : (2, 80, 0),
-    "version" : (0, 0, 1),
-    "location" : "",
-    "warning" : "",
-    "category" : "Generic"
+    "name": "Mubin Link Node Editor",
+    "author": "Marcus Smith",
+    "description": "",
+    "blender": (2, 80, 0),
+    "version": (0, 0, 1),
+    "location": "",
+    "warning": "",
+    "category": "Generic",
 }
+
 
 def register():
     # Register classes
@@ -41,21 +43,26 @@ def register():
         for cls in classes:
             reg_cls(cls)
 
-        register_node_categories('BOTWMUBINEDITOR_NODETREE', RegisterHelper.construct_nodes())
+        register_node_categories(
+            "BOTWMUBINEDITOR_NODETREE", RegisterHelper.construct_nodes()
+        )
     except:
         unregister()
         register()
 
+
 def unregister():
     # Unregister classes
-    unregister_node_categories('BOTWMUBINEDITOR_NODETREE')
+    unregister_node_categories("BOTWMUBINEDITOR_NODETREE")
 
     for cls in classes:
         unreg_cls(cls)
+
 
 @persistent
 def load_handler(dummy):
     bpy.ops.nodes.sync()
     bpy.ops.ignore.sync()
+
 
 bpy.app.handlers.load_post.append(load_handler)
